@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import json
 from pprint import pprint
 import argparse
@@ -104,12 +105,12 @@ def check_package (package, cve_dbs, whitelist):
                                     csv_file.write("{0};{1};{2};{3};{4};{5};{6};{7}\n".format(name, product_name, version, cve_id, base_metric, impact_score, impact_severity, cve_description))
                                 
 
-parser = argparse.ArgumentParser(description="This little tool helps you to identify vulnerable software packages, by looking them up in the CVE (Common Vulnerabilities and Exposure) databases from the NVD. CVEchecker is designed to work offline. It gets feed with two files, the package list file and a cve database file(s). These can be obtained manually or by using the paramaters --download-cve-dbs and --create-packages-file.")
+parser = argparse.ArgumentParser(description="This little tool helps you to identify vulnerable software packages, by looking them up in the CVE (Common Vulnerabilities and Exposure) databases from the NVD. CVEchecker is designed to work offline. It gets fed with two files, the package list file and a cve database file(s). These can be obtained manually or by using the paramaters --download-cve-dbs and --create-packages-file.")
 
 parser.add_argument('--download-cve-dbs', action="store_true", help='Download and extract all CVE databases since 2002 from https://nvd.nist.gov/vuln/data-feeds#JSON_FEED). More than 1 GB of free harddrive space is needed.')
 parser.add_argument('--create-packages-file', action="store_true", help='Create a list of installed packages and corresponding versions. Just works for packages installed with APT.')
-parser.add_argument('--packages-file', help='A whitespace seperated list with software name and version. If parameter isn\'t set, the file ./packages.txt will be loaded by default.')
-parser.add_argument('--cve-dbs', help='Path to CVE database file(s). Multiple paths must be seperated by a comma. The json content must follow the NVD JSON 0.1 beta Schema (https://nvd.nist.gov/vuln/data-feeds#JSON_FEED). If parameter isn\'t set, all files with the name \"nvdcve-1.0-YYYY.json\" will be loaded by default.')
+parser.add_argument('--packages-file', help='A whitespace seperated list with software name and version. If parameter is not set, the file ./packages.txt will be loaded by default.')
+parser.add_argument('--cve-dbs', help='Path to CVE database file(s). Multiple paths must be seperated by a comma. The json content must follow the NVD JSON 0.1 beta Schema (https://nvd.nist.gov/vuln/data-feeds#JSON_FEED). If parameter is not set, all files with the name \"nvdcve-1.0-YYYY.json\" will be loaded by default.')
 parser.add_argument('--whitelist-file', help="A list of CVEs (format: 'CVE-2018-10546') which won't show up in the result. Can be used to exclude false-positives.")
 parser.add_argument('--no-check', action="store_true", help='Use it together with --download-cve-db or --create-packages-file to skip the cve checking process afterwards.')
 parser.add_argument('--csv', help='File name where results shall be stored.')
