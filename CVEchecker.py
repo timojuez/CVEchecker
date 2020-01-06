@@ -72,37 +72,36 @@ def get_cve_db_paths():
 
     
 def check_package (package, cve_dbs, whitelist):
-    name = package.split()[0]
-    version = package.split()[1]
+    name,version = package.split(" ",1)
     print ("\n[*] lookup \"{0} {1}\"".format(name, version))
     
     for cve_db in cve_dbs:
         for cve in cve_db["CVE_Items"]:
             for vendor in cve['cve']['affects']['vendor']['vendor_data']:
                 for product_data in vendor['product']['product_data']:
-                    if name in product_data['product_name']:
-                        for version_data in product_data['version']['version_data']:
-                            if version == version_data['version_value']:                                
-                                product_name=product_data['product_name']
-                                product_version=version_data['version_value']
-                                cve_id=cve['cve']['CVE_data_meta']['ID']
-                                base_metric=''
-                                impact_score=''
-                                impact_severity=''
-                                if 'baseMetricV3' in cve['impact']:
-                                        base_metric='cvssV3'
-                                        impact_score=cve['impact']['baseMetricV3']['cvssV3']['baseScore']
-                                        impact_severity=cve['impact']['baseMetricV3']['cvssV3']['baseSeverity']
-                                else:
-                                        base_metric='cvssV2'
-                                        impact_score=cve['impact']['baseMetricV2']['cvssV2']['baseScore']
-                                        impact_severity=cve['impact']['baseMetricV2']['severity']  
-                                cve_description=cve['cve']['description']['description_data'][0]['value'] # should only be english description
-                                if cve_id in whitelist:
-                                    continue
-                                print ("[+] {0} {1} is affected by {2}, {3}-score {4} ({5})".format(product_name, product_version, cve_id, base_metric, impact_score, impact_severity))
-                                if args.csv:
-                                    csv_file.write("{0};{1};{2};{3};{4};{5};{6};{7}\n".format(name, product_name, version, cve_id, base_metric, impact_score, impact_severity, cve_description))
+                    if name not in product_data['product_name']: continue
+                    for version_data in product_data['version']['version_data']:
+                        if version != version_data['version_value']: continue
+                        product_name=product_data['product_name']
+                        product_version=version_data['version_value']
+                        cve_id=cve['cve']['CVE_data_meta']['ID']
+                        base_metric=''
+                        impact_score=''
+                        impact_severity=''
+                        if 'baseMetricV3' in cve['impact']:
+                            base_metric='cvssV3'
+                            impact_score=cve['impact']['baseMetricV3']['cvssV3']['baseScore']
+                            impact_severity=cve['impact']['baseMetricV3']['cvssV3']['baseSeverity']
+                        else:
+                            base_metric='cvssV2'
+                            impact_score=cve['impact']['baseMetricV2']['cvssV2']['baseScore']
+                            impact_severity=cve['impact']['baseMetricV2']['severity']  
+                        cve_description=cve['cve']['description']['description_data'][0]['value'] # should only be english description
+                        if cve_id in whitelist:
+                            continue
+                        print ("[+] {0} {1} is affected by {2}, {3}-score {4} ({5})".format(product_name, product_version, cve_id, base_metric, impact_score, impact_severity))
+                        if args.csv:
+                            csv_file.write("{0};{1};{2};{3};{4};{5};{6};{7}\n".format(name, product_name, version, cve_id, base_metric, impact_score, impact_severity, cve_description))
                                 
 
 parser = argparse.ArgumentParser(description="This little tool helps you to identify vulnerable software packages, by looking them up in the CVE (Common Vulnerabilities and Exposure) databases from the NVD. CVEchecker is designed to work offline. It gets fed with two files, the package list file and a cve database file(s). These can be obtained manually or by using the paramaters --download-cve-dbs and --create-packages-file.")
