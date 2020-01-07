@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json
+import json, sys
 import pandas as pd
 from pprint import pprint
 import argparse
@@ -53,7 +53,20 @@ def get_installed_packages(f):
 class CVE_Parser(object):
 
     @classmethod
-    def download_cve_dbs(self):
+    def install_cve_from_web(self):
+        if args.cve_dbs:
+            cve_db_paths = args.cve_dbs.split(",")
+        else:
+            cve_db_paths = self._download_cve_dbs()
+        cve_dbs = CVE_Parser._convert_cve_dbs(cve_db_paths)
+        print ("\n[*] {0} CVE databases loaded:".format(len(cve_db_paths)))
+        for db_path in cve_db_paths:
+            print ("[*] {0}".format(db_path))
+        cve_dbs.to_pickle("csv_db.pkl")
+        return cve_dbs
+
+    @classmethod
+    def _download_cve_dbs(self):
         current_year=datetime.datetime.now().year
         years=range(2002, current_year + 1)
         print ("\n[*] download CVEs from {0}-{1}".format("2002", current_year))
@@ -67,8 +80,6 @@ class CVE_Parser(object):
             else:
                 print ("[!] download failed")
 
-    @classmethod
-    def get_cve_db_paths(self):
         cve_db_paths = []
         for f in os.listdir("./"):
             if f.startswith('nvdcve-1.0-') and f.endswith('.json'):
@@ -76,12 +87,19 @@ class CVE_Parser(object):
         return cve_db_paths
 
     @classmethod
-    def load_cve_dbs(self,cve_db_paths):
+    def _convert_cve_dbs(self,cve_db_paths):
+        sys.stderr.write("[*] Converting database")
         cve_dbs = []
         for cve_db_path in cve_db_paths:
             with open(cve_db_path, encoding='utf-8') as path:
-                cve_dbs.append(json.load(path))
-        return self.parseDB(cve_dbs)
+                cve_dbs.extend(self._parseDB(json.load(path)))
+            sys.stderr.write(".")
+        sys.stderr.write("\n")
+        return pd.DataFrame(cve_dbs)
+        
+    @classmethod
+    def load_cve_db(self):
+        return pd.read_pickle("csv_db.pkl")
 
     @classmethod
     def _parseImpact(self,cve):
@@ -96,17 +114,17 @@ class CVE_Parser(object):
         return base_metric,impact_score,impact_severity
     
     @classmethod
-    def parseDB(self,cve_dbs):
+    def _parseDB(self,cve_db):
         return [dict(
                 product_name=product_data['product_name'],
                 product_version=version_data['version_value'],
-                #cve_id=cve['cve']['CVE_data_meta']['ID'],
-                #cve_description=cve['cve']['description']['description_data'][0]['value'],
+                cve_id=cve['cve']['CVE_data_meta']['ID'],
+                cve_description=cve['cve']['description']['description_data'][0]['value'],
                 base_metric=base_metric,
                 impact_score=impact_score,
                 impact_severity=impact_severity,
             )
-            for cve_db in cve_dbs for cve in cve_db["CVE_Items"] for vendor in cve['cve']['affects']['vendor']['vendor_data'] for product_data in vendor['product']['product_data']
+            for cve in cve_db["CVE_Items"] for vendor in cve['cve']['affects']['vendor']['vendor_data'] for product_data in vendor['product']['product_data']
             for version_data in product_data['version']['version_data'] for base_metric,impact_score,impact_severity in [self._parseImpact(cve)] ]
 
 
@@ -155,52 +173,7 @@ def check_package (package, cve_dbs, whitelist):
                             csv_file.write("{0};{1};{2};{3};{4};{5};{6};{7}\n".format(name, product_name, version, cve_id, base_metric, impact_score, impact_severity, cve_description))
                                 
 
-parser = argparse.ArgumentParser(description="This little tool helps you to identify vulnerable software packages, by looking them up in the CVE (Common Vulnerabilities and Exposure) databases from the NVD. CVEchecker is designed to work offline. It gets fed with two files, the package list file and a cve database file(s). These can be obtained manually or by using the paramaters --download-cve-dbs and --create-packages-file.")
-
-parser.add_argument('--download-cve-dbs', action="store_true", help='Download and extract all CVE databases since 2002 from https://nvd.nist.gov/vuln/data-feeds#JSON_FEED). More than 1 GB of free harddrive space is needed.')
-parser.add_argument('--create-packages-file', action="store_true", help='Create a list of installed packages and corresponding versions. Just works for packages installed with APT.')
-parser.add_argument('--packages-file', help='A whitespace seperated list with software name and version. If parameter is not set, the file ./packages.txt will be loaded by default.')
-parser.add_argument('--cve-dbs', help='Path to CVE database file(s). Multiple paths must be seperated by a comma. The json content must follow the NVD JSON 0.1 beta Schema (https://nvd.nist.gov/vuln/data-feeds#JSON_FEED). If parameter is not set, all files with the name \"nvdcve-1.0-YYYY.json\" will be loaded by default.')
-parser.add_argument('--whitelist-file', help="A list of CVEs (format: 'CVE-2018-10546') which won't show up in the result. Can be used to exclude false-positives.")
-parser.add_argument('--no-check', action="store_true", help='Use it together with --download-cve-db or --create-packages-file to skip the cve checking process afterwards.')
-parser.add_argument('--csv', help='File name where results shall be stored.')
-
-args = parser.parse_args()
-
-
-
-def check(packages, cve_dbs, cve_whitelist):
-    if args.csv:
-        csv_file.write("Name;Matching Name;Version;CVE;Metric;Score;Severity;Description\n")
-    packages = [(name,version) for package in packages for name,version in [package.split(" ",1)]]
-    check_packages(packages, cve_dbs, cve_whitelist)
-    if args.csv:
-        csv_file.close
-
-
-# defaults
-packages_file=""
-cve_db_paths=[]
-cve_whitelist=[]
-
-if args.download_cve_dbs:
-    CVE_Parser.download_cve_dbs()
-
-if args.create_packages_file:
-    create_packages_file()
-
-if args.packages_file:
-    packages_file = args.packages_file
-else:
-    packages_file = './packages.txt'
-
-if args.cve_dbs:
-    cve_db_paths = args.cve_dbs.split(",")
-else:
-    cve_db_paths = CVE_Parser.get_cve_db_paths()
-
-    
-if not args.no_check:
+def check():
     if args.csv:
         csv_file = open(args.csv, 'w')
     packages = get_installed_packages(packages_file)
@@ -209,13 +182,54 @@ if not args.no_check:
         name = p.split()[0]
         version = p.split()[1]
         print ("[*] {0} {1}".format(name,version))
-    cve_dbs = CVE_Parser.load_cve_dbs (cve_db_paths)
-    print ("\n[*] {0} CVE databases loaded:".format(len(cve_db_paths)))
-    for db_path in cve_db_paths:
-        print ("[*] {0}".format(db_path))
     if args.whitelist_file:
         cve_whitelist=load_cve_whitelist(args.whitelist_file)
     print ("\n[*] {0} CVEs whitelisted:".format(len(cve_whitelist)))
     for cve_id in cve_whitelist:
         print ("[*] {0}".format(cve_id)) 
+    cve_dbs=CVE_Parser.load_cve_db()
     check(packages, cve_dbs, cve_whitelist)
+    if args.csv:
+        csv_file.write("Name;Matching Name;Version;CVE;Metric;Score;Severity;Description\n")
+    packages = [(name,version) for package in packages for name,version in [package.split(" ",1)]]
+    check_packages(packages, cve_dbs, cve_whitelist)
+    if args.csv:
+        csv_file.close   
+        
+def parseArgs():
+    global args
+    parser = argparse.ArgumentParser(description="This little tool helps you to identify vulnerable software packages, by looking them up in the CVE (Common Vulnerabilities and Exposure) databases from the NVD. CVEchecker is designed to work offline. It gets fed with two files, the package list file and a cve database file(s). These can be obtained manually or by using the paramaters --download-cve-dbs and --create-packages-file.")
+
+    parser.add_argument('--download-cve-dbs', action="store_true", help='Download and extract all CVE databases since 2002 from https://nvd.nist.gov/vuln/data-feeds#JSON_FEED). More than 1 GB of free harddrive space is needed.')
+    parser.add_argument('--create-packages-file', action="store_true", help='Create a list of installed packages and corresponding versions. Just works for packages installed with APT.')
+    parser.add_argument('--packages-file', help='A whitespace seperated list with software name and version. If parameter is not set, the file ./packages.txt will be loaded by default.')
+    parser.add_argument('--cve-dbs', help='Path to CVE database file(s). Multiple paths must be seperated by a comma. The json content must follow the NVD JSON 0.1 beta Schema (https://nvd.nist.gov/vuln/data-feeds#JSON_FEED). If parameter is not set, all files with the name \"nvdcve-1.0-YYYY.json\" will be loaded by default.')
+    parser.add_argument('--whitelist-file', help="A list of CVEs (format: 'CVE-2018-10546') which won't show up in the result. Can be used to exclude false-positives.")
+    parser.add_argument('--no-check', action="store_true", help='Use it together with --download-cve-db or --create-packages-file to skip the cve checking process afterwards.')
+    parser.add_argument('--csv', help='File name where results shall be stored.')
+
+    args = parser.parse_args()
+
+
+
+
+# defaults
+packages_file=""
+cve_db_paths=[]
+cve_whitelist=[]
+
+if __name__ == '__main__':
+    parseArgs()
+    if args.download_cve_dbs:
+        CVE_Parser.install_cve_from_web()
+
+    if args.create_packages_file:
+        create_packages_file()
+
+    if args.packages_file:
+        packages_file = args.packages_file
+    else:
+        packages_file = './packages.txt'
+        
+    if not args.no_check: check()
+ 
