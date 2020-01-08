@@ -49,7 +49,7 @@ def create_packages_file():
     
 def load_packages(f):
     with open(f, encoding='utf-8') as p_file:
-        p=[line.split(" ",1) for line in p_file]
+        p=[line.strip().split(" ",1) for line in p_file]
     p = [(name,sanitize_version(version)) for name,version in p]
     return p
 
@@ -104,11 +104,6 @@ class CVE_Parser(object):
         #cve_db.session.commit()
         
     @classmethod
-    def load_cve_db(self):
-        #return pd.read_pickle("csv_db.pkl")
-        pass
-
-    @classmethod
     def _parseImpact(self,cve):
         if 'baseMetricV3' in cve['impact']:
             base_metric='cvssV3'
@@ -160,10 +155,9 @@ class CVE_Parser(object):
         """
 
 
-def check_packages(packages, cve_dbs, whitelist):
+def check_packages(packages, whitelist):
     """
     @packages: [(name,version)]
-    @cve_dbs: see CVE_Parser.parseDB
     """
     try:
         cve_db._execute("DROP TABLE packages")
@@ -179,46 +173,9 @@ def check_packages(packages, cve_dbs, whitelist):
             t.rollback()
     for d in rows:
         print(("%(product_name)s %(product_version)s\t"
-            "%(cve_id)s (%(base_metric)s: %(impact_score)s, %(impact_severity)s)")%d)
+            "%(cve_id)s\t%(base_metric)s: %(impact_score)s, %(impact_severity)s")%d)
     
     
-def check_package (package, cve_dbs, whitelist):
-    """
-    packages: (name, version)
-    cves: product_data['product_name'], product_data['version']['version_data'][['version_value']]
-    """
-    
-    name,version = package.split(" ",1)
-    print ("\n[*] lookup \"{0} {1}\"".format(name, version))
-    
-    for cve_db in cve_dbs:
-        for cve in cve_db["CVE_Items"]:
-            for vendor in cve['cve']['affects']['vendor']['vendor_data']:
-                for product_data in vendor['product']['product_data']:
-                    if name not in product_data['product_name']: continue
-                    for version_data in product_data['version']['version_data']:
-                        if version != version_data['version_value']: continue
-                        product_name=product_data['product_name']
-                        product_version=version_data['version_value']
-                        cve_id=cve['cve']['CVE_data_meta']['ID']
-                        base_metric=''
-                        impact_score=''
-                        impact_severity=''
-                        if 'baseMetricV3' in cve['impact']:
-                            base_metric='cvssV3'
-                            impact_score=cve['impact']['baseMetricV3']['cvssV3']['baseScore']
-                            impact_severity=cve['impact']['baseMetricV3']['cvssV3']['baseSeverity']
-                        else:
-                            base_metric='cvssV2'
-                            impact_score=cve['impact']['baseMetricV2']['cvssV2']['baseScore']
-                            impact_severity=cve['impact']['baseMetricV2']['severity']  
-                        cve_description=cve['cve']['description']['description_data'][0]['value'] # should only be english description
-                        if cve_id in whitelist:
-                            continue
-                        print ("[+] {0} {1} is affected by {2}, {3}-score {4} ({5})".format(product_name, product_version, cve_id, base_metric, impact_score, impact_severity))
-                        if args.csv:
-                            csv_file.write("{0};{1};{2};{3};{4};{5};{6};{7}\n".format(name, product_name, version, cve_id, base_metric, impact_score, impact_severity, cve_description))
-                                
 
 def check():
     cve_whitelist=[]
@@ -233,10 +190,9 @@ def check():
         print ("\n[*] {0} CVEs whitelisted:".format(len(cve_whitelist)))
         for cve_id in cve_whitelist:
             print ("[*] {0}".format(cve_id)) 
-    cve_dbs=CVE_Parser.load_cve_db()
     if args.csv:
         csv_file.write("Name;Matching Name;Version;CVE;Metric;Score;Severity;Description\n")
-    check_packages(packages, cve_dbs, cve_whitelist)
+    check_packages(packages, cve_whitelist)
     if args.csv:
         csv_file.close   
         
