@@ -58,16 +58,14 @@ class CVE_DB_Installer(object):
     """ Read CVE as JSON from the internet and create local database """
 
     def __init__(self,json_db_paths=None):
-        if json_db_paths:
-            cve_db_paths = json_db_paths.split(",")
-        else:
-            cve_db_paths = self._download_cve_dbs()
+        if not json_db_paths:
+            json_db_paths = self._download_cve_dbs()
         cve_db.create_source()
         cve_db.create_cve()
         cve_db.create_product()
-        cve_dbs = self._convert_cve_dbs(cve_db_paths)
-        print ("\n[*] {0} CVE databases loaded:".format(len(cve_db_paths)))
-        for db_path in cve_db_paths:
+        cve_dbs = self._convert_cve_dbs(json_db_paths)
+        print ("\n[*] {0} CVE databases loaded:".format(len(json_db_paths)))
+        for db_path in json_db_paths:
             print ("[*] {0}".format(db_path))
 
     def _download_cve_dbs(self):
@@ -163,21 +161,35 @@ class CVE_Finder(object):
 class Main(object):
 
     def __init__(self):
-        self.parseArgs()
-        if self.args.download_cve_dbs:
-            CVE_DB_Installer(self.args.cve_dbs)
+        parser = argparse.ArgumentParser(description="This little tool helps you to identify vulnerable software packages, by looking them up in the CVE (Common Vulnerabilities and Exposure) databases from the NVD. CVEchecker is designed to work offline. Once after initialising the database with parameter init, you can feed it with the package list file.")
+        subparsers = parser.add_subparsers(dest="command")
+        subparsers.required = True
 
-        if self.args.create_packages_file:
-            PackageLoader.create_packages_file()
+        init = subparsers.add_parser('init', help='Download and extract all CVE databases since 2002 from https://nvd.nist.gov/vuln/data-feeds#JSON_FEED). More than 1 GB of free harddrive space is needed.')
+        init.set_defaults(func=self.init_db)
+        init.add_argument('--cve-dbs', metavar="PATH", nargs="+", help='Instead of downloading, use a local path to CVE database file(s). The json content must follow the NVD JSON 0.1 beta Schema (https://nvd.nist.gov/vuln/data-feeds#JSON_FEED).')
 
-        if not self.args.no_check: self.check()
+        create_package_file = subparsers.add_parser('create-packages-file', help='Create a list of locally installed packages and corresponding versions. Just works for packages installed with APT.')
+        create_package_file.set_defaults(func=PackageLoader.create_packages_file)
 
-    def check(self):
+        find_cve = subparsers.add_parser('find-cve')
+        find_cve.add_argument("packages_file",metavar="packages-file",help='A whitespace seperated list with software name and version.')
+        find_cve.add_argument('--blacklist', metavar="PATH", help="A list of CVEs (format: 'CVE-2018-10546') which will not show up in the result. Can be used to exclude false-positives.")
+        find_cve.add_argument('--csv', metavar="PATH", help='File name where results shall be stored.')
+        find_cve.set_defaults(func=self.find_cve)
+        
+        self.args = parser.parse_args()
+        self.args.func()
+
+    def init_db(self):
+        CVE_DB_Installer(self.args.cve_dbs)
+
+    def find_cve(self):
         packages_file = self.args.packages_file or './packages.txt'
         packages = PackageLoader(packages_file).packages
 
-        cve_blacklist=self.load_cve_blacklist(self.args.blacklist_file) \
-            if self.args.blacklist_file else []
+        cve_blacklist=self._load_cve_blacklist(self.args.blacklist) \
+            if self.args.blacklist else []
         print("\n")
         finder = CVE_Finder(packages, cve_blacklist)
         if self.args.csv and len(finder.cves)>0:
@@ -186,7 +198,7 @@ class Main(object):
                 writer.writeheader()
                 for data in finder.cves: writer.writerow(data)
 
-    def load_cve_blacklist(self,f):
+    def _load_cve_blacklist(self,f):
         with open(f, encoding='utf-8') as p_file:
             cves = sorted([line_stripped for line in p_file 
                 for line_stripped in [line.strip()] if line_stripped])
@@ -194,19 +206,6 @@ class Main(object):
         for cve_id in cves:
             print ("[*] {0}".format(cve_id)) 
         return cves    
-
-    def parseArgs(self):
-        parser = argparse.ArgumentParser(description="This little tool helps you to identify vulnerable software packages, by looking them up in the CVE (Common Vulnerabilities and Exposure) databases from the NVD. CVEchecker is designed to work offline. It gets fed with two files, the package list file and a cve database file(s). These can be obtained manually or by using the paramaters --download-cve-dbs and --create-packages-file.")
-
-        parser.add_argument('--download-cve-dbs', action="store_true", help='Download and extract all CVE databases since 2002 from https://nvd.nist.gov/vuln/data-feeds#JSON_FEED). More than 1 GB of free harddrive space is needed.')
-        parser.add_argument('--create-packages-file', action="store_true", help='Create a list of installed packages and corresponding versions. Just works for packages installed with APT.')
-        parser.add_argument('--packages-file', help='A whitespace seperated list with software name and version. If parameter is not set, the file ./packages.txt will be loaded by default.')
-        parser.add_argument('--cve-dbs', default=None, help='Path to CVE database file(s). Multiple paths must be seperated by a comma. The json content must follow the NVD JSON 0.1 beta Schema (https://nvd.nist.gov/vuln/data-feeds#JSON_FEED). If parameter is not set, all files with the name \"nvdcve-1.0-YYYY.json\" will be loaded by default.')
-        parser.add_argument('--blacklist-file', help="A list of CVEs (format: 'CVE-2018-10546') which won't show up in the result. Can be used to exclude false-positives.")
-        parser.add_argument('--no-check', action="store_true", help='Use it together with --download-cve-db or --create-packages-file to skip the cve checking process afterwards.')
-        parser.add_argument('--csv', help='File name where results shall be stored.')
-
-        self.args = parser.parse_args()
 
 
 if __name__ == '__main__':
