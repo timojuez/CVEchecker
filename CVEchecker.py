@@ -138,7 +138,7 @@ class CVE_DB_Installer(object):
 
 class CVE_Finder(object):
     
-    def __init__(self,packages, whitelist):
+    def __init__(self,packages, blacklist):
         """
         @packages: [(name,version)]
         """
@@ -151,13 +151,13 @@ class CVE_Finder(object):
                 cve_db.create_packages()
                 for name,version in packages: 
                     cve_db.insert_package(product_name=name,product_version=version)
-                self.cves = list(cve_db.get_cves())
+                self.cves = list(cve_db.get_cves(blacklist=blacklist))
             finally: 
                 t.rollback()
         print("Vulnerability List\n")
         for d in self.cves:
             print(("%(product_name)s %(product_version)s\t"
-                "%(cve_id)s\t%(base_metric)s: %(impact_score)s, %(impact_severity)s\t%(cve_description)s")%d)
+                "%(cve_id)s\t%(base_metric)s: %(impact_score)s, %(impact_severity)s")%d)
 
 
 class Main(object):
@@ -176,22 +176,21 @@ class Main(object):
         packages_file = self.args.packages_file or './packages.txt'
         packages = PackageLoader(packages_file).packages
 
-        cve_whitelist=self.load_cve_whitelist(self.args.whitelist_file) \
-            if self.args.whitelist_file else []
+        cve_blacklist=self.load_cve_blacklist(self.args.blacklist_file) \
+            if self.args.blacklist_file else []
         print("\n")
-        finder = CVE_Finder(packages, cve_whitelist)
-        if self.args.csv:
+        finder = CVE_Finder(packages, cve_blacklist)
+        if self.args.csv and len(finder.cves)>0:
             with open(self.args.csv, 'w') as fp:
                 writer=csv.DictWriter(fp, fieldnames=finder.cves[0].keys())
                 writer.writeheader()
                 for data in finder.cves: writer.writerow(data)
 
-    def load_cve_whitelist(self,f):
-        cves = []
+    def load_cve_blacklist(self,f):
         with open(f, encoding='utf-8') as p_file:
-            for line in p_file:
-                cves.append(line.replace("\n", "").replace("\r", ""))
-        print ("\n[*] {0} CVEs whitelisted:".format(len(cves)))
+            cves = sorted([line_stripped for line in p_file 
+                for line_stripped in [line.strip()] if line_stripped])
+        print ("\n[*] {0} CVEs blacklisted:".format(len(cves)))
         for cve_id in cves:
             print ("[*] {0}".format(cve_id)) 
         return cves    
@@ -203,7 +202,7 @@ class Main(object):
         parser.add_argument('--create-packages-file', action="store_true", help='Create a list of installed packages and corresponding versions. Just works for packages installed with APT.')
         parser.add_argument('--packages-file', help='A whitespace seperated list with software name and version. If parameter is not set, the file ./packages.txt will be loaded by default.')
         parser.add_argument('--cve-dbs', default=None, help='Path to CVE database file(s). Multiple paths must be seperated by a comma. The json content must follow the NVD JSON 0.1 beta Schema (https://nvd.nist.gov/vuln/data-feeds#JSON_FEED). If parameter is not set, all files with the name \"nvdcve-1.0-YYYY.json\" will be loaded by default.')
-        parser.add_argument('--whitelist-file', help="A list of CVEs (format: 'CVE-2018-10546') which won't show up in the result. Can be used to exclude false-positives.")
+        parser.add_argument('--blacklist-file', help="A list of CVEs (format: 'CVE-2018-10546') which won't show up in the result. Can be used to exclude false-positives.")
         parser.add_argument('--no-check', action="store_true", help='Use it together with --download-cve-db or --create-packages-file to skip the cve checking process afterwards.')
         parser.add_argument('--csv', help='File name where results shall be stored.')
 
