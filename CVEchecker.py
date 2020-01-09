@@ -31,8 +31,9 @@ class PackageLoader(object):
         
     def __init__(self,f):
         with open(f, encoding='utf-8') as p_file:
-            p=[line.strip().split(" ",1) for line in p_file]
+            p=[line.strip().rsplit(" ",1) for line in p_file if line.strip()]
         p = [(name,self._sanitize_version(version)) for name,version in p]
+        p = sorted(p,key=lambda e:e[0].upper())
         print("\n[*] {0} packages to check:".format(len(p)))
         for name,version in p:
             print ("[*] {0} {1}".format(name,version))
@@ -150,12 +151,13 @@ class CVE_Finder(object):
                 cve_db.create_packages()
                 for name,version in packages: 
                     cve_db.insert_package(product_name=name,product_version=version)
+                self.cves = list(cve_db.get_cves())
             finally: 
                 t.rollback()
-            self.cves = list(cve_db.get_cves())
+        print("Vulnerability List\n")
         for d in self.cves:
             print(("%(product_name)s %(product_version)s\t"
-                "%(cve_id)s\t%(base_metric)s: %(impact_score)s, %(impact_severity)s")%d)
+                "%(cve_id)s\t%(base_metric)s: %(impact_score)s, %(impact_severity)s\t%(cve_description)s")%d)
 
 
 class Main(object):
@@ -171,17 +173,16 @@ class Main(object):
         if not self.args.no_check: self.check()
 
     def check(self):
-        if self.args.packages_file:
-            packages_file = self.args.packages_file
-        else:
-            packages_file = './packages.txt'
-        packages = PackageLoader(package_file).packages
+        packages_file = self.args.packages_file or './packages.txt'
+        packages = PackageLoader(packages_file).packages
 
-        cve_whitelist=self.load_cve_whitelist(args.whitelist_file) if args.whitelist_file else []
+        cve_whitelist=self.load_cve_whitelist(self.args.whitelist_file) \
+            if self.args.whitelist_file else []
+        print("\n")
         finder = CVE_Finder(packages, cve_whitelist)
         if self.args.csv:
             with open(self.args.csv, 'w') as fp:
-                writer=csv.DictWriter(fp, fieldnames=finder.cves.keys())
+                writer=csv.DictWriter(fp, fieldnames=finder.cves[0].keys())
                 writer.writeheader()
                 for data in finder.cves: writer.writerow(data)
 
@@ -210,5 +211,5 @@ class Main(object):
 
 
 if __name__ == '__main__':
-    Main()()
+    Main()
 
