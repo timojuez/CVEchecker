@@ -32,7 +32,7 @@ class PackageLoader(object):
     def __init__(self,f):
         with open(f, encoding='utf-8') as p_file:
             p=[line.strip().rsplit(" ",1) for line in p_file if line.strip()]
-        p = [(name,self._sanitize_version(version)) for name,version in p]
+        p = [(name.replace(" ","_"),self._sanitize_version(version)) for name,version in p]
         p = sorted(p,key=lambda e:e[0].upper())
         print("\n[*] {0} packages to check:".format(len(p)))
         for name,version in p:
@@ -150,13 +150,18 @@ class CVE_Finder(object):
                 for name,version in packages: 
                     cve_db.insert_package(product_name=name,product_version=version)
                 self.cves = list(cve_db.get_cves(blacklist=blacklist))
+                print("Vulnerability List\n")
+                for d in self.cves:
+                    print(("%(product_name)s %(product_version)s\t"
+                        "%(cve_id)s\t%(base_metric)s: %(impact_score)s, %(impact_severity)s")%d)
+                print()
+                self.unmatched = list(cve_db.get_unmatched())
+                if self.unmatched:
+                    print("[!] %d of %d packages not found in DB:"%(len(self.unmatched),len(packages)))
+                    for d in self.unmatched: print("[*] %s"%d["product_name"])
             finally: 
                 t.rollback()
-        print("Vulnerability List\n")
-        for d in self.cves:
-            print(("%(product_name)s %(product_version)s\t"
-                "%(cve_id)s\t%(base_metric)s: %(impact_score)s, %(impact_severity)s")%d)
-
+        
 
 class Main(object):
 
