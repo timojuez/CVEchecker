@@ -2,7 +2,7 @@
 A simple but powerful offline checker to lookup CVEs for software packages.
 
 ## Description 
-This little tool helps you to identify vulnerable software packages, by looking them up in the CVE (Common Vulnerabilities and Exposure) databases from the NVD. CVEchecker is designed to work offline. It gets feed with two files, the package list file and a cve database file(s). These can be obtained manually or by using the paramaters --download-cve-dbs and --create-packages-file.
+This little tool helps you to identify vulnerable software packages, by looking them up in the CVE (Common Vulnerabilities and Exposure) databases from the NVD. CVEchecker is designed to work offline. Once after initialising the database with parameter init, you can feed it with the package list file.
 
 ## Features
 * Download CVE databases
@@ -13,23 +13,20 @@ This little tool helps you to identify vulnerable software packages, by looking 
 
 ## Dependencies
    ```Python 3.4```
+   ```pugsql```
 
 ## Quickstart
-1. Download CVE databases and create a packages.txt file (just work packages installed using APT). Don't run the check afterwards.
+1. Download CVE databases. Don't run the check afterwards.
 
-   ``` ~# python CVEchecker.py --download-cve-dbs --create-packages-file --no-check ```
+   ``` ~# python CVEchecker.py init ```
 
-2. Run CVEchecker against all packages in the "package.txt" file. Use all CVE DB files matching the schema "nvdcve-1.0-YYYY.json".
+2. Run CVEchecker against all packages in the "package.txt" file.
 
-   ``` ~# python CVEchecker.py```
+   ``` ~# python CVEchecker.py find-cve ./package.txt```
 
-3. Use custom paths for package and CVE db files.
+3. Like #2 but exclude some CVEs from the result and save results as csv.
 
-   ``` ~# python CVEchecker.py --packages-file /my/folder/all_packages.txt --cve-dbs /foo1/bar1.json,/foo2/bar2.json ```
-   
-4. Like nr. 2 but exclude some CVEs from the result.
-
-   ``` ~# python CVEchecker.py  --whitelist-file /some/whitelist.txt ```
+   ``` ~# python CVEchecker.py --blacklist /some/blacklisted_csvs.txt --csv output.csv ./package.txt ```
     
 
 ## Missing Features
