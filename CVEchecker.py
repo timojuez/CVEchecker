@@ -8,6 +8,7 @@ import zipfile
 import io
 import datetime
 import requests
+import cvss
 
 
 cve_db = pugsql.module("queries/")
@@ -98,14 +99,18 @@ class CVE_DB_Installer(object):
         sys.stderr.write("\n")
         
     def _parseImpact(self,cve):
+        base_metric='cvssV3'
         if 'baseMetricV3' in cve['impact']:
-            base_metric='cvssV3'
             impact_score=cve['impact']['baseMetricV3']['cvssV3']['baseScore']
             impact_severity=cve['impact']['baseMetricV3']['cvssV3']['baseSeverity']
         elif 'baseMetricV2' in cve['impact']:
-            base_metric='cvssV2'
-            impact_score=cve['impact']['baseMetricV2']['cvssV2']['baseScore']
-            impact_severity=cve['impact']['baseMetricV2']['severity']  
+            c = CVSS_Converter.cvss2to3(
+                cve["impact"]["baseMetricV2"]["cvssV2"]["vectorString"],
+                "R" if cve["impact"]["baseMetricV2"].get("userInteractionRequired") else "N")
+            impact_score=str(c.base_score)
+            impact_severity=c.severities()[0]
+            #print(cve["impact"]["baseMetricV2"])
+            #print("INFO: cvss2to3: %s -> %s"%(cve['impact']['baseMetricV2']['cvssV2']['baseScore'],impact_score))
         else: raise
         return base_metric,impact_score,impact_severity
     
@@ -164,6 +169,36 @@ class CVE_Finder(object):
                     for d in self.unmatched: print("[*] %s"%d["product_name"])
             finally: 
                 t.rollback()
+        
+
+class CVSS_Converter(object):
+    
+    " Source: https://security.stackexchange.com/questions/127335/how-to-convert-risk-scores-cvssv1-cvssv2-cvssv3-owasp-risk-severity """ 
+    conv = [
+        ("AV","AV",dict(N="N",A="A",L="L")),
+        ("AC","AC",dict(L="L",M="H",H="H")),
+        ("Au","PR",dict(N="N",S="L",M="H")),
+        ("C","C",dict(C="H",P="L",N="N")),
+        ("I","I",dict(C="H",P="L",N="N")),
+        ("A","A",dict(C="H",P="L",N="N")),
+        ("E","E",dict(H="H",F="F",POC="POC",U="U",ND="X")),
+        ("RL","RL",dict(OF="O",TF="T",W="W",U="U",ND="X")),
+        ("RC","RC",dict(C="C",UR="R",UC="U",ND="X")),
+    ]
+
+    @classmethod
+    def cvss2to3(self, vector, userInteractionRequired=None, scope=None):
+        """
+        Read CVSS v2 vector and return cvss.CVSS3 instance
+        """
+        v2 = {key:val for e in vector.split("/") for key,val in [e.split(":",1)]}
+        v3 = {key3:choice[v2[key2]] for key2,key3,choice in self.conv if key2 in v2}
+        if userInteractionRequired is None: v3["UI"] = "N" if v2["AC"] == "H" else "R"
+        else: v3["UI"] = userInteractionRequired
+        if scope: v3["S"] = scope
+        else: v3["S"] = "C" if "H" in (v2["C"], v2["I"], v2["A"]) else "U"
+        c = cvss.CVSS3("/".join(["CVSS:3.0"]+["%s:%s"%e for e in v3.items()]))
+        return c
         
 
 class Main(object):
