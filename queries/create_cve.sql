@@ -6,5 +6,7 @@ CREATE TABLE cve (
     cve_description TEXT,
     base_metric TEXT,
     impact_score DECIMAL(3,1),
-    impact_severity TEXT
+    impact_severity TEXT,
+    publishedDate datetime,
+    lastModifiedDate datetime
 );

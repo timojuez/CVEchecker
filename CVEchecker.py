@@ -90,7 +90,7 @@ class CVE_DB_Installer(object):
         return cve_db_paths
 
     def _convert_cve_dbs(self,cve_db_paths):
-        sys.stderr.write("[*] Converting database")
+        sys.stderr.write("[*] Converting database");sys.stderr.flush()
         for cve_db_path in cve_db_paths:
             with open(cve_db_path, encoding='utf-8') as fp:
                 self._parseJSON(cve_db_path,json.load(fp))
@@ -122,6 +122,8 @@ class CVE_DB_Installer(object):
                 base_metric=base_metric,
                 impact_score=impact_score,
                 impact_severity=impact_severity,
+                publishedDate=cve["publishedDate"],
+                lastModifiedDate=cve["lastModifiedDate"],
             )
             cve_db.insert_product(*tuple([dict(
                             cve=cve_id,
@@ -136,7 +138,7 @@ class CVE_DB_Installer(object):
 
 class CVE_Finder(object):
     
-    def __init__(self,packages, blacklist):
+    def __init__(self,packages, blacklist=[], fromDate=None):
         """
         @packages: [(name,version)]
         """
@@ -149,11 +151,12 @@ class CVE_Finder(object):
                 cve_db.create_packages()
                 for name,version in packages: 
                     cve_db.insert_package(product_name=name,product_version=version)
-                self.cves = list(cve_db.get_cves(blacklist=blacklist))
+                self.cves = list(cve_db.get_cves(blacklist=blacklist,fromDate=fromDate))
                 print("Vulnerability List\n")
                 for d in self.cves:
                     print(("%(product_name)s %(product_version)s\t"
-                        "%(cve_id)s\t%(base_metric)s: %(impact_score)s, %(impact_severity)s")%d)
+                        "%(cve_id)s\t%(base_metric)s: %(impact_score)s, %(impact_severity)s "
+                        "(%(lastModifiedDate)s)")%d)
                 print()
                 self.unmatched = list(cve_db.get_unmatched())
                 if self.unmatched:
@@ -180,6 +183,7 @@ class Main(object):
         find_cve = subparsers.add_parser('find-cve')
         find_cve.add_argument("packages_file",metavar="packages-file",help='A whitespace seperated list with software name and version.')
         find_cve.add_argument('--blacklist', metavar="PATH", help="A list of CVEs (format: 'CVE-2018-10546') which will not show up in the result. Can be used to exclude false-positives.")
+        find_cve.add_argument('--from', default=None, metavar="DATE", help="Show only the latest CVEs, example: --from 2018-12-31.")
         find_cve.add_argument('--csv', metavar="PATH", help='File name where results shall be stored.')
         find_cve.set_defaults(func=self.find_cve)
         
@@ -196,7 +200,7 @@ class Main(object):
         cve_blacklist=self._load_cve_blacklist(self.args.blacklist) \
             if self.args.blacklist else []
         print("\n")
-        finder = CVE_Finder(packages, cve_blacklist)
+        finder = CVE_Finder(packages, cve_blacklist, getattr(self.args,"from"))
         if self.args.csv and len(finder.cves)>0:
             with open(self.args.csv, 'w') as fp:
                 writer=csv.DictWriter(fp, fieldnames=finder.cves[0].keys())
