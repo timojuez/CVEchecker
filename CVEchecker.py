@@ -217,7 +217,7 @@ class Main(object):
 
         find_cve = subparsers.add_parser('find-cve')
         find_cve.add_argument("packages_file",metavar="packages-file",help='A whitespace seperated list with software name and version.')
-        find_cve.add_argument('--blacklist', metavar="PATH", help="A list of CVEs (format: 'CVE-2018-10546') which will not show up in the result. Can be used to exclude false-positives.")
+        find_cve.add_argument('--blacklists', nargs="+", metavar="PATH", help="One or more lists of CVEs (format: 'CVE-2018-10546') which will not show up in the result. Can be used to exclude false-positives.")
         find_cve.add_argument('--from', default=None, metavar="DATE", help="Show only the latest CVEs, example: --from 2018-12-31.")
         find_cve.add_argument('--csv', metavar="PATH", help='File name where results shall be stored.')
         find_cve.set_defaults(func=self.find_cve)
@@ -232,8 +232,8 @@ class Main(object):
         packages_file = self.args.packages_file or './packages.txt'
         packages = PackageLoader(packages_file).packages
 
-        cve_blacklist=self._load_cve_blacklist(self.args.blacklist) \
-            if self.args.blacklist else []
+        cve_blacklist=[e for b in self.args.blacklists for e in self._load_cve_blacklist(b)] \
+            if self.args.blacklists else []
         print("\n")
         finder = CVE_Finder(packages, cve_blacklist, getattr(self.args,"from"))
         if self.args.csv and len(finder.cves)>0:
