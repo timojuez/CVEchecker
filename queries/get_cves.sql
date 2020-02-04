@@ -8,5 +8,5 @@ LEFT JOIN cve
 ON cve.rowid = product.cve
 WHERE (cve_id IS NULL OR cve_id NOT IN :blacklist) 
 AND (:fromDate IS NULL or publishedDate >= :fromDate)
-ORDER BY impact_score DESC, lower(product.product_name) ASC;
+ORDER BY lower(product.product_name) ASC, impact_score DESC, lastModifiedDate DESC;
 
