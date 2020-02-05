@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import json, sys, csv
-import pugsql
 from pprint import pprint
 import argparse
 import os
@@ -9,12 +8,9 @@ import io
 import datetime
 import requests
 import cvss
+from db import *
 
-
-cve_db = pugsql.module("queries/")
-cve_db.connect("sqlite:///cve_db.db")
-
-        
+       
 class PackageLoader(object):
     """ Reads the list of the customer's packages in use """
   
