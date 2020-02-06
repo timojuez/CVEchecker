@@ -95,7 +95,6 @@ class CVE_DB_Installer(object):
         sys.stderr.write("\n")
         
     def _parseImpact(self,cve):
-        base_metric='cvssV3'
         if 'baseMetricV3' in cve['impact']:
             impact_score=cve['impact']['baseMetricV3']['cvssV3']['baseScore']
             impact_severity=cve['impact']['baseMetricV3']['cvssV3']['baseSeverity']
@@ -113,7 +112,6 @@ class CVE_DB_Installer(object):
             #print("INFO: cvss2to3: %s -> %s"%(cve['impact']['baseMetricV2']['cvssV2']['baseScore'],impact_score))
         else: raise
         return dict(
-            base_metric=base_metric,
             impact_score=impact_score,
             impact_severity=impact_severity,
             vector=vector,
