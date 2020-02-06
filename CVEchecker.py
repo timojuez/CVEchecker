@@ -99,32 +99,38 @@ class CVE_DB_Installer(object):
         if 'baseMetricV3' in cve['impact']:
             impact_score=cve['impact']['baseMetricV3']['cvssV3']['baseScore']
             impact_severity=cve['impact']['baseMetricV3']['cvssV3']['baseSeverity']
+            vector=cve["impact"]["baseMetricV3"]["cvssV3"]["vectorString"]
+            impact_score_v2=None
         elif 'baseMetricV2' in cve['impact']:
             c = CVSS_Converter.cvss2to3(
                 cve["impact"]["baseMetricV2"]["cvssV2"]["vectorString"],
                 "R" if cve["impact"]["baseMetricV2"].get("userInteractionRequired") else "N")
             impact_score=str(c.base_score)
             impact_severity=c.severities()[0]
+            vector=c.clean_vector()
+            impact_score_v2=cve['impact']['baseMetricV2']['cvssV2']['baseScore']
             #print(cve["impact"]["baseMetricV2"])
             #print("INFO: cvss2to3: %s -> %s"%(cve['impact']['baseMetricV2']['cvssV2']['baseScore'],impact_score))
         else: raise
-        return base_metric,impact_score,impact_severity
+        return dict(
+            base_metric=base_metric,
+            impact_score=impact_score,
+            impact_severity=impact_severity,
+            vector=vector,
+            impact_score_v2=impact_score_v2)
     
     def _parseJSON(self,path,json_d):
         source_id = cve_db.insert_source(filename=path,added_on=str(datetime.datetime.now()))
         
         for cve in json_d["CVE_Items"]:
             if len(cve["cve"]["affects"]["vendor"]["vendor_data"]) == 0: continue
-            base_metric,impact_score,impact_severity = self._parseImpact(cve)
             cve_id = cve_db.insert_cve(
                 source=source_id,
                 cve_id=cve['cve']['CVE_data_meta']['ID'],
                 cve_description=cve['cve']['description']['description_data'][0]['value'],
-                base_metric=base_metric,
-                impact_score=impact_score,
-                impact_severity=impact_severity,
                 publishedDate=cve["publishedDate"],
                 lastModifiedDate=cve["lastModifiedDate"],
+                **self._parseImpact(cve)
             )
             cve_db.insert_product(*tuple([dict(
                             cve=cve_id,
