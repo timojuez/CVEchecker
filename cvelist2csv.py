@@ -14,20 +14,23 @@ class Main(object):
         #parser.add_argument('--reason', metavar="TEXT", help='Reason table column text.')
         self.args = parser.parse_args()
 
-    def readf(f):
+    def readf(self,f):
         with open(f) as fp:
-            return fp
+            return fp.readlines()
     
     def __call__(self):
         cves = set([line_strip for path in self.args.path
             for line in self.readf(path) for line_strip in [line.strip()] if line_strip])
         if self.args.whitelist:
-            with open(self.args.whitelist,"rb") as fp:
-                whitelist = set(csv.reader(fp))
+            with open(self.args.whitelist,"r") as fp:
+                csvfile = csv.DictReader(fp)
+                whitelist = set([e["cve_id"] for e in csvfile])
+                print(whitelist)
+                print(cves)
                 cves = whitelist.intersection(cves)
         rows = list(cve_db.get_cves_by_ids(ids=cves))
         if len(rows) == 0: 
-            sys.sterr.write("Empty set.\n")
+            sys.stderr.write("Empty set.\n")
             exit(1)
         with open(self.args.output,"w") as fp:
             writer=csv.DictWriter(fp, fieldnames=rows[0].keys())
