@@ -217,7 +217,7 @@ class Main(object):
 
         find_cve = subparsers.add_parser('find-cve',help="Find corresponding CVEs for a given software list")
         find_cve.add_argument("packages_file",metavar="packages-file",help='A whitespace seperated list with software name and version.')
-        find_cve.add_argument('--blacklists', nargs="+", metavar="PATH", help="One or more lists of CVEs (format: 'CVE-2018-10546') which will not show up in the result. Can be used to exclude false-positives.")
+        #find_cve.add_argument('--blacklists', nargs="+", metavar="PATH", help="One or more lists of CVEs (format: 'CVE-2018-10546') which will not show up in the result. Can be used to exclude false-positives.")
         find_cve.add_argument('--from', default=None, metavar="DATE", help="Show only the latest CVEs, example: --from 2018-12-31.")
         find_cve.add_argument('--output', metavar="CSV", help='File name where results shall be stored.')
         find_cve.set_defaults(func=self.find_cve)
@@ -236,7 +236,7 @@ class Main(object):
             if self.args.blacklists else []
         print ("\n[*] {0} CVEs blacklisted.".format(len(cve_blacklist)))
         print("\n")
-        finder = CVE_Finder(packages, cve_blacklist, getattr(self.args,"from"))
+        finder = CVE_Finder(packages, [], getattr(self.args,"from"))
         if self.args.output and len(finder.cves)>0:
             with open(self.args.output, 'w') as fp:
                 writer=csv.DictWriter(fp, fieldnames=finder.cves[0].keys())
