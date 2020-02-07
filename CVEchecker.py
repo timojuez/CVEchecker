@@ -160,7 +160,7 @@ class CVE_Finder(object):
                 print("Vulnerability List\n")
                 for d in self.cves:
                     print(("%(product_name)s %(product_version)s\t"
-                        "%(cve_id)s\t%(base_metric)s: %(impact_score)s, %(impact_severity)s "
+                        "%(cve_id)s\tCVSS2: %(impact_score_v2)s, CVSS3: %(impact_score)s, %(impact_severity)s "
                         "(%(lastModifiedDate)s)")%d)
                 print()
                 self.unmatched = list(cve_db.get_unmatched())
@@ -234,6 +234,7 @@ class Main(object):
 
         cve_blacklist=[e for b in self.args.blacklists for e in self._load_cve_blacklist(b)] \
             if self.args.blacklists else []
+        print ("\n[*] {0} CVEs blacklisted.".format(len(cve_blacklist)))
         print("\n")
         finder = CVE_Finder(packages, cve_blacklist, getattr(self.args,"from"))
         if self.args.output and len(finder.cves)>0:
@@ -246,9 +247,6 @@ class Main(object):
         with open(f, encoding='utf-8') as p_file:
             cves = sorted([line_stripped for line in p_file 
                 for line_stripped in [line.strip()] if line_stripped])
-        print ("\n[*] {0} CVEs blacklisted:".format(len(cves)))
-        for cve_id in cves:
-            print ("[*] {0}".format(cve_id)) 
         return cves    
 
 
