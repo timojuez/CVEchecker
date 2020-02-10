@@ -1,5 +1,5 @@
 -- :name get_cves :many
-SELECT packages.*, cve.*
+SELECT packages.*, cve.*, strftime('%Y-%m-%d',lastModifiedDate) as lastModifiedDate_formatted, strftime('%Y-%m-%d',publishedDate) as publishedDate_formatted
 FROM packages
 LEFT JOIN product
 ON lower(product.product_name) = lower(packages.product_name)
