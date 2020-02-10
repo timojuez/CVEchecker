@@ -25,8 +25,6 @@ class Main(object):
             with open(self.args.whitelist,"r") as fp:
                 csvfile = csv.DictReader(fp)
                 whitelist = set([e["cve_id"] for e in csvfile])
-                print(whitelist)
-                print(cves)
                 cves = whitelist.intersection(cves)
         rows = list(cve_db.get_cves_by_ids(ids=cves))
         if len(rows) == 0: 
