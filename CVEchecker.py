@@ -113,7 +113,7 @@ class CVE_DB_Installer(object):
         else: raise
         return dict(
             impact_score=impact_score,
-            impact_severity=impact_severity,
+            impact_severity=impact_severity.upper(),
             vector=vector,
             impact_score_v2=impact_score_v2)
     
@@ -232,22 +232,12 @@ class Main(object):
         packages_file = self.args.packages_file or './packages.txt'
         packages = PackageLoader(packages_file).packages
 
-        cve_blacklist=[e for b in self.args.blacklists for e in self._load_cve_blacklist(b)] \
-            if self.args.blacklists else []
-        print ("\n[*] {0} CVEs blacklisted.".format(len(cve_blacklist)))
-        print("\n")
         finder = CVE_Finder(packages, [], getattr(self.args,"from"))
         if self.args.output and len(finder.cves)>0:
             with open(self.args.output, 'w') as fp:
                 writer=csv.DictWriter(fp, fieldnames=finder.cves[0].keys())
                 writer.writeheader()
                 for data in finder.cves: writer.writerow(data)
-
-    def _load_cve_blacklist(self,f):
-        with open(f, encoding='utf-8') as p_file:
-            cves = sorted([line_stripped for line in p_file 
-                for line_stripped in [line.strip()] if line_stripped])
-        return cves    
 
 
 if __name__ == '__main__':
