@@ -9,8 +9,8 @@ class Main(object):
     def __init__(self):
         parser = argparse.ArgumentParser(description="Filter cve_id col in csv file by cve_id col in other csv file")
         parser.add_argument('csv', metavar="CSV", help="Read and modify this file")
-        parser.add_argument('--blacklist', nargs="+", metavar="PATH", help='CVE list with CVEs to be removed')
-        parser.add_argument('--whitelist', nargs="+", metavar="PATH", help='CVE list with CVEs to make an intersection with')
+        parser.add_argument('--blacklist', nargs="+", metavar="CSV", help='CVE list with CVEs to be removed')
+        parser.add_argument('--whitelist', nargs="+", metavar="CSV", help='CVE list with CVEs to make an intersection with')
         #parser.add_argument('--reason', metavar="TEXT", help='Reason table column text.')
         self.args = parser.parse_args()
 

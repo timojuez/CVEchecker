@@ -81,7 +81,7 @@ class CVE_DB_Installer(object):
                 print ("[!] download failed")
 
         cve_db_paths = []
-        for f in os.listdir("./"):
+        for f in os.listdir("./"): #FIXME
             if f.startswith('nvdcve-1.0-') and f.endswith('.json'):
                 cve_db_paths.append(f)
         return cve_db_paths

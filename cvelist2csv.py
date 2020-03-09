@@ -10,8 +10,7 @@ class Main(object):
         parser = argparse.ArgumentParser(description="Create cve table from list")
         parser.add_argument('path', nargs="+", metavar="PATH", help="List(s) of CVEs (format: 'CVE-2018-10546')")
         parser.add_argument('--output', metavar="CSV", help='File name where results shall be stored.')
-        parser.add_argument('--whitelist', metavar="CSV", help='Output CSV from CVEchecker. Only subsets of detected CVEs.')
-        #parser.add_argument('--reason', metavar="TEXT", help='Reason table column text.')
+        parser.add_argument('--whitelist', metavar="CSV", help='Output only subset of CVEs. CSV can be output CSV from CVEchecker.')
         self.args = parser.parse_args()
 
     def readf(self,f):
@@ -20,7 +19,7 @@ class Main(object):
     
     def __call__(self):
         cves = set([line_strip for path in self.args.path
-            for line in self.readf(path) for line_strip in [line.strip()] if line_strip])
+            for line in self.readf(path) for line_strip in [line.strip()] if line_strip and line_strip[0] != "#"])
         if self.args.whitelist:
             with open(self.args.whitelist,"r") as fp:
                 csvfile = csv.DictReader(fp)
