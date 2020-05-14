@@ -1,5 +1,6 @@
 -- :name get_cves :many
-SELECT packages.*, cve.*, strftime('%Y-%m-%d',lastModifiedDate) as lastModifiedDate_formatted, strftime('%Y-%m-%d',publishedDate) as publishedDate_formatted
+--SELECT packages.*, cve.*, strftime('%Y-%m-%d',lastModifiedDate) as lastModifiedDate_formatted, strftime('%Y-%m-%d',publishedDate) as publishedDate_formatted, printf("%.1f",impact_score) as impact_score_str
+SELECT packages.product_name, packages.product_version, cve_id, printf("%.1f",impact_score) as impact_score, impact_severity, strftime('%Y-%m-%d',lastModifiedDate) as lastModifiedDate_formatted, strftime('%Y-%m-%d',publishedDate) as publishedDate_formatted, vector, impact_score_v2, cve_description, lastModifiedDate, publishedDate
 FROM packages
 LEFT JOIN product
 ON lower(product.product_name) = lower(packages.product_name)
