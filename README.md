@@ -13,7 +13,7 @@ This little tool helps you to identify vulnerable software packages, by looking 
 * CVE blacklist management - Blacklist CVEs in various custom files
 
 ## Install
-`pip3 install --user .`
+`$ git clone https://github.com/timojuez/CVEchecker.git && pip3 install --user ./CVEchecker`
 
 ## Usage
 The program consists of many small tools that find CVEs for a given software version.
