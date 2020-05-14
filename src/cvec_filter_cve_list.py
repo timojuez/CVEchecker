@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse,csv,sys
-from db import *
 
 
 class Main(object):
