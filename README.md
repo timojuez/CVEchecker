@@ -1,4 +1,4 @@
-# CVEchecker
+# CVEC - CVE checking tools
 A simple but powerful offline checker to lookup CVEs for software packages.
 
 ## Description 
@@ -10,25 +10,33 @@ This little tool helps you to identify vulnerable software packages, by looking 
 * Lookup corresponding CVEs to applications+version
 * CVE lookup works offline
 * CSV output
+* CVE blacklist management - Blacklist CVEs in various custom files
 
 ## Install
 `pip3 install --user .`
 
-## Quickstart
-1. Download CVE databases. Don't run the check afterwards.
+## Usage
+The program consists of many small tools that find CVEs for a given software version.
 
-   ``` ~# python CVEchecker.py init ```
+* The program downloads files and creates a database of CVEs
+`cvec_checker init`
+* Reads program names and version from a text input file and writes CVEs in csv format 
+`cvec_checker find-cve --output cves.csv input_file`
+* Blacklist CVE ids
+    * Create blacklist with all CVEs that do not affect confidentiality or integrity 
+  `cvec_find_availability_cves > blacklist`
+    * Convert CVE ids list to csv containing CVE description etc `cvec_cvelist2csv --output blacklist.csv blacklist`
+    * Remove CVEs that are not in cves.csv: ` cvec_filter_cve_list.py --whitelist cves.csv -- blacklist.csv > blacklist_filtered.csv`
+    * Remove CVEs that are already in other_blacklist1.csv and other_blacklist2.csv: `cvec_filter_cve_list --blacklist other_blacklist1.csv other_blacklist2.csv -- blacklist.csv > blacklist_filtered.csv`
+    * Remove CVEs from blacklist1.csv and blacklist2.csv in cves.csv: `cvec_filter_cve_list --blacklist blacklist1.csv blacklist2.csv -- cves.csv > cves_filtered.csv`
 
-2. Run CVEchecker against all packages in the "package.txt" file.
 
-   ``` ~# python CVEchecker.py find-cve ./package.txt```
 
-3. Like #2 but exclude some CVEs from the result and save results as csv.
-
-   ``` ~# python CVEchecker.py --blacklist /some/blacklisted_csvs.txt --csv output.csv ./package.txt ```
-    
 
 ## Missing Features
 * Show only --criticality findigs (LOW,MEDIUM,HIGH,...)
-* disable fuzzy search to avoid false positives
 * show exact reason for matching (name + version, fuzzy/exact,...)
+
+# References
+* See also https://github.com/intel/cve-bin-tool#csv2cve
+
