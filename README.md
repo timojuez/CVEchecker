@@ -11,9 +11,8 @@ This little tool helps you to identify vulnerable software packages, by looking 
 * CVE lookup works offline
 * CSV output
 
-## Dependencies
-   ```Python 3.4```
-   ```pugsql```
+## Install
+`pip3 install --user .`
 
 ## Quickstart
 1. Download CVE databases. Don't run the check afterwards.
