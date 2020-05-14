@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse,csv,sys
-from db import *
+from cvec.db import *
 
 
 class Main(object):

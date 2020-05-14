@@ -2,7 +2,7 @@
 
 import sys
 from cvss import CVSS3
-from db import *
+from cvec.db import *
 
 
 sys.stderr.write("Creating a CVE list of all CVEs from database where integrity=none and confidentiality=none and output to stdout.\n")

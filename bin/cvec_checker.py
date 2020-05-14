@@ -8,7 +8,7 @@ import io
 import datetime
 import requests
 import cvss
-from db import *
+from cvec.db import *
 
        
 class PackageLoader(object):
