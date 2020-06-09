@@ -11,6 +11,7 @@ This little tool helps you to identify vulnerable software packages, by looking 
 * CVE lookup works offline
 * CSV output
 * CVE blacklist management - Blacklist CVEs in various custom files
+* Get a report about different results from different runs
 
 ## Install
 `$ git clone https://github.com/timojuez/CVEchecker.git && pip3 install --user ./CVEchecker`
@@ -29,7 +30,7 @@ The program consists of many small tools that find CVEs for a given software ver
     * Remove CVEs that are not in cves.csv: ` cvec_filter_cve_list.py --whitelist cves.csv -- blacklist.csv > blacklist_filtered.csv`
     * Remove CVEs that are already in other_blacklist1.csv and other_blacklist2.csv: `cvec_filter_cve_list --blacklist other_blacklist1.csv other_blacklist2.csv -- blacklist.csv > blacklist_filtered.csv`
     * Remove CVEs from blacklist1.csv and blacklist2.csv in cves.csv: `cvec_filter_cve_list --blacklist blacklist1.csv blacklist2.csv -- cves.csv > cves_filtered.csv`
-
+* Print a report comparing all csv files with the same name in dir1 and dir2: `cvec_summary dir1 dir2`
 
 
 
