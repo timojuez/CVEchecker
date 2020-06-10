@@ -179,6 +179,7 @@ class CVE_Finder(object):
     def _filter(self, e):
         """ returns True iff e matches its defined version """
         col = "cve_product_version_affected"
+        if not e[col]: return True
         try: op = self._operators[e[col]]
         except KeyError: raise ValueError("Column `%s` has invalid comparator `%s`."%(col,e[col]))
         #return e["product_version"] <= e["cve_product_version"]
