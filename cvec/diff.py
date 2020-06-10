@@ -30,7 +30,7 @@ class CveList(object):
     
     def intersection(self, other):
         other_ = [e.get("cve_id") for e in other]
-        return CveList(sorted([e for e in self._o if e.get("cve_id") in other_],key=lambda e:e.get("cve_id")))
+        return CveList(sorted([e for e in self._o if e.get("cve_id") and e.get("cve_id") in other_],key=lambda e:e.get("cve_id")))
         
     def __str__(self): return "\n".join(["\t%s"%e for e in self._o])
     
