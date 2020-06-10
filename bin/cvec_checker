@@ -8,6 +8,7 @@ import io
 import datetime
 import requests
 import cvss
+from packaging.version import parse as Version
 from cvec.db import *
 
        
@@ -71,7 +72,7 @@ class CVE_DB_Installer(object):
         print ("\n[*] download CVEs from {0}-{1}".format("2002", current_year))
         #years=[] # TODO: skipping
         for year in years:
-            zip_file_url = "https://nvd.nist.gov/feeds/json/cve/1.0/nvdcve-1.0-{0}.json.zip".format(year)
+            zip_file_url = "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-{0}.json.zip".format(year)
             print ("[*] download and extract {0}".format(zip_file_url))
             r = requests.get("" + zip_file_url)
             if r.ok:
@@ -134,6 +135,7 @@ class CVE_DB_Installer(object):
                             cve=cve_id,
                             product_name=product_data['product_name'],
                             product_version=version_data['version_value'],
+                            product_version_affected=version_data['version_affected'],
                 )
                 for vendor in cve['cve']['affects']['vendor']['vendor_data']
                 for product_data in vendor['product']['product_data']
@@ -143,6 +145,8 @@ class CVE_DB_Installer(object):
 
 class CVE_Finder(object):
     
+    _operators = {"=":"__eq__","<=":"__le__",">=":"__ge__","<":"__lt__",">":"__gt__"}
+
     def __init__(self,packages, blacklist=[], fromDate=None):
         """
         @packages: [(name,version)]
@@ -156,9 +160,11 @@ class CVE_Finder(object):
                 cve_db.create_packages()
                 for name,version in packages: 
                     cve_db.insert_package(product_name=name,product_version=version)
-                self.cves = list(cve_db.get_cves(blacklist=blacklist,fromDate=fromDate))
+                cves = cve_db.get_cves(blacklist=blacklist,fromDate=fromDate)
+                self.cves = list(filter(self._filter, cves))
                 print("Vulnerability List\n")
                 for d in self.cves:
+                    
                     print(("%(product_name)s %(product_version)s\t"
                         "%(cve_id)s\tCVSS2: %(impact_score_v2)s, CVSS3: %(impact_score)s, %(impact_severity)s "
                         "(%(lastModifiedDate)s)")%d)
@@ -169,7 +175,15 @@ class CVE_Finder(object):
                     for d in self.unmatched: print("[*] %s"%d["product_name"])
             finally: 
                 t.rollback()
-        
+    
+    def _filter(self, e):
+        """ returns True iff e matches its defined version """
+        col = "cve_product_version_affected"
+        try: op = self._operators[e[col]]
+        except KeyError: raise ValueError("Column `%s` has invalid comparator `%s`."%(col,e[col]))
+        #return e["product_version"] <= e["cve_product_version"]
+        return getattr(Version(e["product_version"]),op)(Version(e["cve_product_version"]))
+    
 
 class CVSS_Converter(object):
     

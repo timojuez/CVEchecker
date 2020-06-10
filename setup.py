@@ -5,14 +5,14 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="cvec",
-    version="0.1.0",
+    version="0.1.1",
     author="Timo Richter",
     author_email="",
     description="CVE checker - Find CVEs that affect given program(s)",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/timojuez/CVEchecker",
-    install_requires=["cvss","cvsslib","zipp","requests","pugsql"],
+    install_requires=["cvss","cvsslib","zipp","requests","pugsql","packaging"],
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
