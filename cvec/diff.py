@@ -12,7 +12,7 @@ class Cve(object):
     def __getitem__(self, name): return self._o[name]
     
     def __eq__(self, other): return self._o == other._o
-
+    
 
 class CveList(object):
 
@@ -40,6 +40,8 @@ class CveList(object):
     
     def __bool__(self): return bool(self._o)
     
+    def __len__(self): return len(self._o)
+    
 
 class Report(object):
 
@@ -59,7 +61,7 @@ class Report(object):
             print()
         
     def _change(self, a, b):
-        changed = [(x,y) for x,y in zip((a.intersection(b)),(b.intersection(a))) if x!=y]
+        changed = [(x,y) for x,y in zip(a.intersection(b),b.intersection(a)) if x!=y]
         changed = [(x.get("cve_id"),
                 [(k,x.get(k),y.get(k)) for k,v in x.items() if y.get(k) != v])
             for x,y in changed]
