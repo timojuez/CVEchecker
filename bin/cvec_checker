@@ -8,7 +8,7 @@ import io
 import datetime
 import requests
 import cvss
-from packaging.version import parse as Version
+from packaging.version import LegacyVersion as Version
 from cvec.db import *
 
        
