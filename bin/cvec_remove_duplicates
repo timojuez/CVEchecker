@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+import sys, csv, argparse
+
+
+class Main:
+
+    def __init__(self):
+        parser = argparse.ArgumentParser(description="")
+        parser.add_argument("input_csv")
+        self.args = parser.parse_args()
+        
+    def __call__(self):
+        with open(self.args.input_csv) as fp:
+            content = list(csv.DictReader(fp))
+        cves = set()
+        new = []
+        for e in content:
+            cve = e["cve_id"]
+            if cve in cves: continue
+            cves.add(cve)
+            new.append(e)
+        if not new: return
+        writer = csv.DictWriter(sys.stdout, fieldnames=new[0].keys())
+        writer.writeheader()
+        for data in new: writer.writerow(data)
+
+
+if __name__ == '__main__':
+    Main()()
+
