@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+import argparse
+from cvec.diff import Report
+
+class Main:
+    def __init__(self):
+        parser = argparse.ArgumentParser(description="")
+        parser.add_argument('old_csv', help='')
+        parser.add_argument('new_csv', help='')
+        self.args = parser.parse_args()
+        Report(self.args.old_csv, self.args.new_csv)
+
+if __name__ == '__main__':
+    Main()
+

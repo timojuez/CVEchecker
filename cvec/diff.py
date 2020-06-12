@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse,csv,sys
+import csv,sys
 
 
 class Cve(object):
@@ -67,16 +67,3 @@ class Report(object):
             for x,y in changed]
         return "\n".join(["%s:\n%s"%(cveid,"\n".join(["\t%s: '%s' -> '%s'"%(name,old,new) for name,old,new in v])) for cveid,v in changed])
         
-
-class Main:
-    def __init__(self):
-        parser = argparse.ArgumentParser(description="")
-        parser.add_argument('old_csv', help='')
-        parser.add_argument('new_csv', help='')
-        self.args = parser.parse_args()
-        Report(self.args.old_csv, self.args.new_csv)
-
-
-if __name__ == '__main__':
-    Main()
-
