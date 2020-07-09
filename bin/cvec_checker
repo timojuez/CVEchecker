@@ -72,7 +72,7 @@ class CVE_DB_Installer(object):
         print ("\n[*] download CVEs from {0}-{1}".format("2002", current_year))
         #years=[] # TODO: skipping
         for year in years:
-            zip_file_url = "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-{0}.json.zip".format(year)
+            zip_file_url = "https://nvd.nist.gov/feeds/json/cve/1.0/nvdcve-1.0-{0}.json.zip".format(year)
             print ("[*] download and extract {0}".format(zip_file_url))
             r = requests.get("" + zip_file_url)
             if r.ok:
