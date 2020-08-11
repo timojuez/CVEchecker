@@ -8,6 +8,7 @@ CREATE TABLE cve (
     impact_severity TEXT,
     publishedDate datetime,
     lastModifiedDate datetime,
+    configuration TEXT,
     vector TEXT,
     impact_score_v2 DECIMAL(3,1) DEFAULT NULL
 );
