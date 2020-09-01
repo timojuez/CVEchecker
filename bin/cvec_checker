@@ -83,7 +83,8 @@ class CVE_DB_Installer(object):
         
         for cve in json_d["CVE_Items"]:
             if not cve["impact"]: continue
-            yield dict(
+            #yield dict(
+            cve_db.insert_cve(dict(
                 source=source_id,
                 cve_id=cve['cve']['CVE_data_meta']['ID'],
                 cve_description=cve['cve']['description']['description_data'][0]['value'],
@@ -91,7 +92,7 @@ class CVE_DB_Installer(object):
                 lastModifiedDate=cve["lastModifiedDate"],
                 configuration=json.dumps(cve["configurations"]),
                 **self._parseImpact(cve)
-            )
+            ))
 
 
 class Configuration:
