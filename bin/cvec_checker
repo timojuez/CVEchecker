@@ -8,9 +8,8 @@ import io
 import datetime
 import requests
 import cvss
-from cpe.cpeset2_3 import CPESet2_3
-from cpe.cpe2_3 import CPE2_3 as CPE
 from cvec.db import *
+from cvec.cpe_set import CPESet, load_cpe_file
 
        
 class CVE_DB_Installer(object):
@@ -95,60 +94,29 @@ class CVE_DB_Installer(object):
             ))
 
 
-class Configuration:
-    
-    def __init__(self, cpe_set): self.cpe_set = cpe_set
-        
-    def eval(self, conf): return any([self.parse(e) for e in conf])
-
-    def parse(self, e): return self.conjunction(e) if e["operator"] == "AND" \
-        else self.disjunction(e)
-
-    def conjunction(self, l): return all(self.resolve(l))
-
-    def disjunction(self, l): return any(self.resolve(l))
-
-    def resolve(self, e):
-        assert(not ("children" in e and "cpe_match" in e))
-        if "children" in e: return [self.parse(f) for f in e["children"]]
-        if "cpe_match" in e:
-            r = []
-            for cpe_dict in e["cpe_match"]:
-                cpe = CPE(cpe_dict["cpe23Uri"])
-                r.append(self.cpe_set.name_match(cpe))
-            return r
-
-
-class CPESet(CPESet2_3):
-
-    def __init__(self, l=None):
-        super().__init__()
-        for e in l or []: self.append(e)
-        
-
 class CVE_Finder:
     
     def __init__(self, cpe_set):
         self.cves = []
         self.unmatched = []
-        conf = Configuration(cpe_set)
         print("Vulnerability List\n")
         count = cve_db._execute("SELECT count(*) FROM cve").fetchone()[0]
         for i,cve in enumerate(cve_db._execute("SELECT * FROM cve")):
             sys.stderr.write("\r%d/%d"%(i,count))
             conf_dict = json.loads(cve["configuration"])["nodes"]
-            if conf.eval(conf_dict):
-                self.cves.append(cve)
-                # TODO: find product_name
-                print(("%(product_name)s %(product_version)s\t"
-                    "%(cve_id)s\tCVSS2: %(impact_score_v2)s, CVSS3: %(impact_score)s, %(impact_severity)s "
-                    "(%(lastModifiedDate)s)")%cve)
-        print()
-        """
-        if self.unmatched:
-            print("[!] %d of %d packages not found in DB:"%(len(self.unmatched),len(packages)))
-            for d in self.unmatched: print("[*] %s"%d["product_name"])
-        """
+            if cpe_set.matches(conf_dict):
+                matching = [cpe for cpe in cpe_set if CPESet([cpe]).matches(conf_dict)]
+                if len(matching) != 1:
+                    sys.stderr.write("WARNING: CVE matches not equal to 1: %s\n"%cve)
+                for cpe in matching:
+                    cve = dict(cve)
+                    cve["product_name"] = cpe.get_product()[0]
+                    cve["product_version"] = cpe.get_version()[0]
+                    self.cves.append(cve)
+                #print(("%(product_name)s %(product_version)s\t"
+                #    "%(cve_id)s\tCVSS2: %(impact_score_v2)s, CVSS3: %(impact_score)s, %(impact_severity)s "
+                #    "(%(lastModifiedDate)s)")%cve)
+        #print()
         
 
 class CVSS_Converter(object):
@@ -204,17 +172,7 @@ class Main(object):
         CVE_DB_Installer(self.args.cve_dbs)
         
     def find_cve(self):
-        cpe_set = CPESet()
-        with open(self.args.packages_file) as fp:
-            for l in fp:
-                l = l.strip()
-                if not l or l.startswith("#"): continue
-                try: cpe_set.append(CPE(l))
-                except:
-                    print(l)
-                    raise
-
-        finder = CVE_Finder(cpe_set)
+        finder = CVE_Finder(load_cpe_file(self.args.packages_file))
         if self.args.output and len(finder.cves)>0:
             with open(self.args.output, 'w') as fp:
                 writer=csv.DictWriter(fp, fieldnames=finder.cves[0].keys())
