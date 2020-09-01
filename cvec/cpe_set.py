@@ -48,5 +48,6 @@ def load_cpe_file(path):
             except:
                 print(l)
                 raise
+    return cpe_set
 
 
