@@ -191,15 +191,8 @@ class Main(object):
         init.set_defaults(func=self.init_db)
         init.add_argument('--cve-dbs', metavar="PATH", nargs="+", help='Instead of downloading, use a local path to CVE database file(s). The json content must follow the NVD JSON 0.1 beta Schema (https://nvd.nist.gov/vuln/data-feeds#JSON_FEED).')
         
-        match = subparsers.add_parser("match", help="Convert package names to CPE strings")
-        match.set_defaults(func=self.match)
-        match.add_argument("packages_file",metavar="packages-file",help='A whitespace seperated list with software name and version.')
-
-        create_package_file = subparsers.add_parser('create-packages-file', help='Create a list of locally installed packages and corresponding versions. Just works for packages installed with APT.')
-        create_package_file.set_defaults(func=PackageLoader.create_packages_file)
-
         find_cve = subparsers.add_parser('find-cve',help="Find corresponding CVEs for a given software list")
-        find_cve.add_argument("packages_file",metavar="packages-file",help='A whitespace seperated list with software name and version.')
+        find_cve.add_argument("packages_file",metavar="packages-file",help='CPE list')
         find_cve.add_argument('--output', metavar="CSV", help='File name where results shall be stored.')
         find_cve.set_defaults(func=self.find_cve)
         
@@ -209,27 +202,6 @@ class Main(object):
     def init_db(self):
         CVE_DB_Installer(self.args.cve_dbs)
         
-    def match(self):
-        def getCpeUris(d): # TODO: use CPE list instead
-            """ return list of all values for key "cpe23Uri" in dict/list @d """
-            if isinstance(d,list):
-                return [x for e in d for x in getCpeUris(e)]
-            elif isinstance(d,dict) and "cpe23Uri" in d: return [CPE(d["cpe23Uri"])]
-            elif isinstance(d,dict):
-                return [x for k,v in d.items() for x in getCpeUris(v)]
-            else: return []
-                
-        packages = PackageLoader(self.args.packages_file).packages
-
-        for e in cve_db._execute("SELECT configuration FROM cve"):
-            d = json.loads(e["configuration"])
-            for cpe in getCpeUris(d):
-                print(cpe.as_fs())
-                for name, ver in packages.copy(): # TODO: in db; and print unmatched
-                    if cpe.get_product() == name and (name,ver) in packages:
-                        print('%s %s -> "cpe:2.3:%s:%s:%s:%s:*:*:*:*:*:*:*"'%(name, ver, cpe.get_part(), cpe.get_vendor(), name, ver))
-                        packages.remove((name,ver))
-
     def find_cve(self):
         cpe_set = CPESet()
         with open(self.args.packages_file) as fp:
