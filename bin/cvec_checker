@@ -105,9 +105,10 @@ class CVE_Finder:
             sys.stderr.write("\r%d/%d"%(i,count))
             conf_dict = json.loads(cve["configuration"])["nodes"]
             if cpe_set.matches(conf_dict):
-                matching = [cpe for cpe in cpe_set if CPESet([cpe]).matches(conf_dict)]
-                if len(matching) != 1:
-                    sys.stderr.write("WARNING: CVE matches not equal to 1: %s\n"%cve)
+                matching = [cpe for cpe in cpe_set 
+                    if not CPESet(filter(lambda e:e!=cpe, cpe_set)).matches(conf_dict)]
+                if len(matching) == 0:
+                    raise RuntimeError("CVE matches not equal to 1: %s\n"%cve)
                 for cpe in matching:
                     cve = dict(cve)
                     cve["product_name"] = cpe.get_product()[0]
