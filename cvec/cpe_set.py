@@ -11,23 +11,27 @@ class ConfigurationParserMixin:
     def _parse(self, e): return self._conjunction(e) if e["operator"] == "AND" \
         else self._disjunction(e)
 
-    def _conjunction(self, l): return all(self._resolve(l))
+    def _conjunction(self, l):
+        for e in self._resolve(l):
+            if not e: return False
+        return True
 
-    def _disjunction(self, l): return any(self._resolve(l))
+    def _disjunction(self, l):
+        for e in self._resolve(l):
+            if e: return True
+        return False
 
     def _resolve(self, e):
         assert(not ("children" in e and "cpe_match" in e))
-        if "children" in e: return [self._parse(f) for f in e["children"]]
+        if "children" in e:
+            for f in e["children"]: yield self._parse(f)
         if "cpe_match" in e:
-            r = []
             for cpe_dict in e["cpe_match"]:
                 try:
                     cpe = CPE(cpe_dict["cpe23Uri"])
                 except NotImplementedError as e:
                     cpe = CPE(cpe_dict["cpe23Uri"].replace("?","\\?"))
                 yield self.name_match(cpe)
-                r.append(self.name_match(cpe))
-            return r
 
 
 class CastableMixin:
