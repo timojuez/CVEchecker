@@ -21,7 +21,11 @@ class ConfigurationParserMixin:
         if "cpe_match" in e:
             r = []
             for cpe_dict in e["cpe_match"]:
-                cpe = CPE(cpe_dict["cpe23Uri"])
+                try:
+                    cpe = CPE(cpe_dict["cpe23Uri"])
+                except NotImplementedError as e:
+                    cpe = CPE(cpe_dict["cpe23Uri"].replace("?","\\?"))
+                yield self.name_match(cpe)
                 r.append(self.name_match(cpe))
             return r
 
