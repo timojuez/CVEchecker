@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="cvec",
-    version="0.2.3",
+    version="0.2.4",
     author="Timo Richter",
     author_email="",
     description="CVE checker - Find CVEs that affect given program(s)",

@@ -105,7 +105,11 @@ class CVE_Finder:
             sys.stderr.write("\r%d/%d"%(i,count))
             conf_dict = json.loads(cve["configuration"])["nodes"]
             if cpe_set.matches(conf_dict):
-                matching = [cpe for cpe in cpe_set 
+                #cpe_set_matching = cpe_set
+                conf_dict_uris = "".join(self.get_cpe_uris(conf_dict))
+                cpe_set_matching = [cpe for cpe in cpe_set #speed up
+                    if any([product in conf_dict_uris for product in cpe.get_product()])]
+                matching = [cpe for cpe in cpe_set_matching
                     if not CPESet(filter(lambda e:e!=cpe, cpe_set)).matches(conf_dict)]
                 if len(matching) == 0:
                     raise RuntimeError("CVE matches not equal to 1: %s\n"%cve)
@@ -118,11 +122,30 @@ class CVE_Finder:
                 #    "%(cve_id)s\tCVSS2: %(impact_score_v2)s, CVSS3: %(impact_score)s, %(impact_severity)s "
                 #    "(%(lastModifiedDate)s)")%cve)
         #print()
+    
+    def get_cpe_uris(self, conf_dict):
+        for e in conf_dict:
+            for e_ in self._resolve(e): yield e_
+            
+    def _resolve(self, e):
+        if "children" in e:
+            for f in e["children"]: 
+                for e_ in self._resolve(f): yield e_
+        elif "cpe_match" in e:
+            for cpe_dict in e["cpe_match"]:
+                yield cpe_dict["cpe23Uri"]
+                """
+                try:
+                    cpe = CPE(cpe_dict["cpe23Uri"])
+                except NotImplementedError as e:
+                    cpe = CPE(cpe_dict["cpe23Uri"].replace("?","\\?"))
+                yield self.name_match(cpe)
+                """
         
 
 class CVSS_Converter(object):
     
-    " Source: https://security.stackexchange.com/questions/127335/how-to-convert-risk-scores-cvssv1-cvssv2-cvssv3-owasp-risk-severity """ 
+    """ Source: https://security.stackexchange.com/questions/127335/how-to-convert-risk-scores-cvssv1-cvssv2-cvssv3-owasp-risk-severity """ 
     conv = [
         ("AV","AV",dict(N="N",A="A",L="L")),
         ("AC","AC",dict(L="L",M="H",H="H")),
