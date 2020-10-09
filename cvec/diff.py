@@ -18,6 +18,7 @@ class CveList(object):
 
     @classmethod
     def fromfile(self, path):
+        csv.field_size_limit(sys.maxsize)
         with open(path) as fp:
             o = list(csv.DictReader(fp))
             return self(list(map(Cve,o)))
@@ -30,7 +31,7 @@ class CveList(object):
     
     def intersection(self, other):
         other_ = [e.get("cve_id") for e in other]
-        return CveList(sorted([e for e in self._o if e.get("cve_id") and e.get("cve_id") in other_],key=lambda e:e.get("cve_id")))
+        return CveList(sorted({e.get("cve_id"):e for e in self._o if e.get("cve_id") and e.get("cve_id") in other_}.values(),key=lambda e:e.get("cve_id")))
         
     def __str__(self): return "\n".join(["\t%s"%e for e in self._o])
     
