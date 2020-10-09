@@ -31,7 +31,10 @@ class ConfigurationParserMixin:
                     cpe = CPE(cpe_dict["cpe23Uri"])
                 except NotImplementedError as e:
                     cpe = CPE(cpe_dict["cpe23Uri"].replace("?","\\?"))
-                yield self.name_match(cpe)
+                yield self.name_match(cpe) #\
+                    #and ("versionEndIncluding" not in cpe_dict or cpe.get_version() <= cpe_dict["versionEndIncluding"]) \
+                    #and ("versionStartIncluding" not in cpe_dict or cpe.get_version() >= cpe_dict["versionStartIncluding"]) \
+                    
 
 
 class CastableMixin:
