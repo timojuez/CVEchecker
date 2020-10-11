@@ -1,3 +1,4 @@
+from packaging.version import LegacyVersion as Version
 from cpe.cpeset2_3 import CPESet2_3
 from cpe.cpe2_3 import CPE2_3 as CPE
 
@@ -31,9 +32,19 @@ class ConfigurationParserMixin:
                     cpe = CPE(cpe_dict["cpe23Uri"])
                 except NotImplementedError as e:
                     cpe = CPE(cpe_dict["cpe23Uri"].replace("?","\\?"))
-                yield self.name_match(cpe) #\
-                    #and ("versionEndIncluding" not in cpe_dict or cpe.get_version() <= cpe_dict["versionEndIncluding"]) \
-                    #and ("versionStartIncluding" not in cpe_dict or cpe.get_version() >= cpe_dict["versionStartIncluding"]) \
+                
+                matches = self.name_match(cpe)
+                if not matches: yield False
+                
+                listed_versions = [cpe_.get_version()[0] for cpe_ in self 
+                    if cpe_.get_product()[0] == cpe.get_product()[0]
+                    and cpe_.get_vendor()[0] == cpe.get_vendor()[0]]
+
+                yield matches \
+                    and ("versionEndIncluding" not in cpe_dict or any([Version(v) <= Version(cpe_dict["versionEndIncluding"]) for v in listed_versions])) \
+                    and ("versionStartIncluding" not in cpe_dict or any([Version(v) >= Version(cpe_dict["versionStartIncluding"]) for v in listed_versions])) \
+                    and ("versionStartExcluding" not in cpe_dict or any([Version(v) > Version(cpe_dict["versionStartExcluding"]) for v in listed_versions])) \
+                    and ("versionEndExcluding" not in cpe_dict or any([Version(v) < Version(cpe_dict["versionEndExcluding"]) for v in listed_versions]))
                     
 
 
