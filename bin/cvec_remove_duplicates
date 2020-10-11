@@ -2,6 +2,9 @@
 import sys, csv, argparse
 
 
+csv.field_size_limit(sys.maxsize)
+
+
 class Main:
 
     def __init__(self):

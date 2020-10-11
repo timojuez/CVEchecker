@@ -3,6 +3,9 @@
 import argparse,csv,sys
 
 
+csv.field_size_limit(sys.maxsize)
+
+
 class Main(object):
 
     def __init__(self):

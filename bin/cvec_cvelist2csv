@@ -4,6 +4,9 @@ import argparse,csv,sys
 from cvec.db import *
 
 
+csv.field_size_limit(sys.maxsize)
+
+
 class Main(object):
 
     def __init__(self):
