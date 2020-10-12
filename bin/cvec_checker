@@ -89,6 +89,8 @@ class CVE_DB_Installer(object):
                 cve_description=cve['cve']['description']['description_data'][0]['value'],
                 publishedDate=cve["publishedDate"],
                 lastModifiedDate=cve["lastModifiedDate"],
+                publishedDate_formatted=cve["publishedDate"][:10],
+                lastModifiedDate_formatted=cve["lastModifiedDate"][:10],
                 configuration=json.dumps(cve["configurations"]),
                 **self._parseImpact(cve)
             ))
