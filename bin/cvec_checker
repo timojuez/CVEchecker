@@ -101,7 +101,7 @@ class CVE_Finder:
         self.unmatched = []
         print("Vulnerability List\n")
         count = cve_db._execute("SELECT count(*) FROM cve").fetchone()[0]
-        for i,cve in enumerate(cve_db._execute("SELECT * FROM cve")):
+        for i,cve in enumerate(cve_db.get_cves()):
             sys.stderr.write("\r%d/%d"%(i,count))
             conf_dict = json.loads(cve["configuration"])["nodes"]
             if cpe_set.matches(conf_dict):
@@ -117,8 +117,8 @@ class CVE_Finder:
                     cve = dict(cve)
                     cve["product_name"] = cpe.get_product()[0]
                     cve["product_version"] = cpe.get_version()[0]
-                    cve["publishedDate_formatted"] = cve["publishedDate"][:10]
-                    cve["lastModifiedDate_formatted"] = cve["lastModifiedDate"][:10]
+                    #cve["publishedDate_formatted"] = cve["publishedDate"][:10]
+                    #cve["lastModifiedDate_formatted"] = cve["lastModifiedDate"][:10]
                     self.cves.append(cve)
                 #print(("%(product_name)s %(product_version)s\t"
                 #    "%(cve_id)s\tCVSS2: %(impact_score_v2)s, CVSS3: %(impact_score)s, %(impact_severity)s "
@@ -205,7 +205,8 @@ class Main(object):
                 cols = ["product_name","product_version","cve_id","impact_score","impact_severity","lastModifiedDate_formatted","publishedDate_formatted","vector","cve_description"]
                 writer=csv.DictWriter(fp, fieldnames=cols+[col for col in finder.cves[0] if col not in cols])
                 writer.writeheader()
-                for data in finder.cves: writer.writerow(data)
+                for data in sorted(finder.cves, key=lambda e:e["product_name"]):
+                    writer.writerow(data)
 
 
 if __name__ == '__main__':
