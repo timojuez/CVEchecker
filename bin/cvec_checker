@@ -125,7 +125,7 @@ class CVE_Finder:
                 #    "(%(lastModifiedDate)s)")%cve)
         #print()
     
-    def get_cpe_uris(self, conf_dict):
+    def get_cpe_uris(self, conf_dict): # TODO: move to cpe_set.py
         for e in conf_dict:
             for e_ in self._resolve(e): yield e_
             
