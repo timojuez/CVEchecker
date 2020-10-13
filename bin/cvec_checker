@@ -89,8 +89,6 @@ class CVE_DB_Installer(object):
                 cve_description=cve['cve']['description']['description_data'][0]['value'],
                 publishedDate=cve["publishedDate"],
                 lastModifiedDate=cve["lastModifiedDate"],
-                publishedDate_formatted=cve["publishedDate"][:10],
-                lastModifiedDate_formatted=cve["lastModifiedDate"][:10],
                 configuration=json.dumps(cve["configurations"]),
                 **self._parseImpact(cve)
             ))
@@ -119,6 +117,8 @@ class CVE_Finder:
                     cve = dict(cve)
                     cve["product_name"] = cpe.get_product()[0]
                     cve["product_version"] = cpe.get_version()[0]
+                    cve["publishedDate_formatted"] = cve["publishedDate"][:10]
+                    cve["lastModifiedDate_formatted"] = cve["lastModifiedDate"][:10]
                     self.cves.append(cve)
                 #print(("%(product_name)s %(product_version)s\t"
                 #    "%(cve_id)s\tCVSS2: %(impact_score_v2)s, CVSS3: %(impact_score)s, %(impact_severity)s "
@@ -201,7 +201,9 @@ class Main(object):
         finder = CVE_Finder(load_cpe_file(self.args.packages_file))
         if self.args.output and len(finder.cves)>0:
             with open(self.args.output, 'w') as fp:
-                writer=csv.DictWriter(fp, fieldnames=finder.cves[0].keys())
+                #cols = finder.cves[0].keys()
+                cols = ["product_name","product_version","cve_id","impact_score","impact_severity","lastModifiedDate_formatted","publishedDate_formatted","vector","cve_description"]
+                writer=csv.DictWriter(fp, fieldnames=cols+[col for col in finder.cves[0] if col not in cols])
                 writer.writeheader()
                 for data in finder.cves: writer.writerow(data)
 
