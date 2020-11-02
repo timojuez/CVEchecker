@@ -20,7 +20,6 @@ class CVE_DB_Installer(object):
             json_db_paths = self._download_cve_dbs()
         cve_db.create_source()
         cve_db.create_cve()
-        cve_db.create_product()
         cve_dbs = self._convert_cve_dbs(json_db_paths)
         print ("\n[*] {0} CVE databases loaded:".format(len(json_db_paths)))
         for db_path in json_db_paths:
